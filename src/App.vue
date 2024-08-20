@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { store } from "./store/store.ts"
 import { ref } from 'vue';
-import Panel from "./components/Panel.vue";
+import Panel, { Node } from "./components/Panel.vue";
 
-const root = ref({
+const root = ref<Node>({
   children: [
     {
       children: [
@@ -31,20 +31,50 @@ const root = ref({
       layout: "row",
       title: "children"
     }
-
   ],
   id: 'root',
   layout: "column",
   title: "root"
 })
 
+function findAndAppend(node: Node, specifiedId: string, direction: string): Node {
+  if (specifiedId === node.id && node.children.length <= 0) {
+    return {
+      ...node,
+      layout: direction,
+      children: [ 
+        { id: node.id + Math.random(), title: 'grand' + node.title, layout: 'row', children: [] }, 
+        { id: node.id + Math.random(), title: 'grand' + node.title, layout: 'row', children: [] } 
+      ]
+    }
+  } else if (node.children.length > 0) {
+    return {
+      ...node,
+      children: [findAndAppend(node.children[0], specifiedId, direction), findAndAppend(node.children[1], specifiedId, direction)]
+    }
+  } else {
+    return node;
+  }
+}
+
+function splitHorizontally() {
+  if (store.inFocusId) {
+    root.value = findAndAppend(root.value, store.inFocusId, 'column') 
+  }
+}
+
+function splitVertically() {
+  if (store.inFocusId) {
+    root.value = findAndAppend(root.value, store.inFocusId, 'row') 
+  }
+}
+
 </script>
 
 <template>
   <div class="newButton">
-    <button>Add horizontal child</button>
-    <button>Add vertical child</button>
-    <span>{{store.inFocusId}}</span>
+    <button @click="splitHorizontally">Split horizontally</button>
+    <button @click="splitVertically">Split vertically</button>
   </div>
   <div class="top">
     <Panel :title="root.title" :children="root.children" :layout="root.layout" :id="root.id" />
